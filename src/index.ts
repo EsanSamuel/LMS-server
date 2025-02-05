@@ -7,6 +7,7 @@ import cors from "cors";
 import { rateLimit } from "express-rate-limit";
 import users from "./routes/user.route";
 import rooms from "./routes/room.route";
+import courses from "./routes/course.route";
 
 const app = express();
 const server = http.createServer(app);
@@ -31,6 +32,7 @@ const limiter = rateLimit({
 app.use(limiter);
 app.use("/v1", users);
 app.use("/v1", rooms);
+app.use("/v1", courses);
 
 app.get("/", async (req: express.Request, res: express.Response) => {
   res.send("Hello from the server!");

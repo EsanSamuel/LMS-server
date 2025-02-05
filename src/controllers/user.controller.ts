@@ -9,7 +9,7 @@ import cloudinary from "../utils/cloudinary";
 
 const redis = new Redis();
 
-const getCurrentUser = async (clerkId: string) => {
+const getCurrentUser = async <T>(clerkId: string): Promise<string | null> => {
   const user = await prisma.user.findUnique({
     where: {
       clerkId: clerkId,
@@ -28,7 +28,9 @@ class UserController {
     }
 
     const [uniqueUsername, domain] = email.split("@");
+
     console.log(uniqueUsername);
+
     try {
       const user = await prisma.user.create({
         data: {
@@ -38,7 +40,9 @@ class UserController {
           uniqueName: uniqueUsername,
         },
       });
+
       console.log(user);
+
       res
         .status(201)
         .json(new ApiSuccess(201, "User created successfully", user));

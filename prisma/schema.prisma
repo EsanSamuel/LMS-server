@@ -54,6 +54,7 @@ model CourseRoom {
   creator       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   //members User[] @relation("members", fields: [userIds], references: [id])
   RoomOrganizer RoomOrganizer[]
+  Content       Content[]
 }
 
 enum RoomStatus {
@@ -79,18 +80,21 @@ enum RoomRole {
 
 //post lessons 
 model Content {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String     @db.ObjectId
-  title       String
-  textContent String?
-  videoUrls   String[]
-  imageUrls   String[]
-  pdf         String[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  status      RoomStatus @default(public)
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String     @db.ObjectId
+  title        String
+  thumbnailUrl String
+  textContent  String?
+  videoUrls    String[]
+  imageUrls    String[]
+  pdf          String[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  status       RoomStatus @default(public)
+  roomId       String     @db.ObjectId
 
-  creator User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creator User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room    CourseRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   Comment Comment[]
   Reply   Reply[]
   Rating  Rating[]

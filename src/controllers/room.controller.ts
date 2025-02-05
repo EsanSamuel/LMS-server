@@ -220,7 +220,7 @@ class CourseController {
       const roomImageBuffer = req.file.buffer;
 
       const resizeImage = await sharp(roomImageBuffer)
-        .resize(250, 250)
+        .resize(500, 350)
         .toFormat("png")
         .toBuffer();
 

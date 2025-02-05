@@ -29,3 +29,12 @@ export const validateOrganizer = z.object({
 });
 
 export type organizerType = z.infer<typeof validateOrganizer>;
+
+export const validateContent = z.object({
+  title: z.string().min(1).max(255),
+  textContent: z.string().min(1).max(255),
+  userId: z.string().min(1).max(255),
+  roomId: z.string().min(1).max(255),
+});
+
+export type contentType = z.infer<typeof validateContent>;

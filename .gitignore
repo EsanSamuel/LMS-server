@@ -1,3 +1,11 @@
 node_modules
 # Keep environment variables out of version control
 .env
+
+
+git init
+git add .
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/EsanSamuel/LMS-server.git
+git push -u origin main
