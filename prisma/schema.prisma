@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  username     String
+  email        String   @unique
+  clerkId      String   @unique
+  bio          String?
+  uniqueName   String   @unique
+  role         Role     @default(STUDENT)
+  profileImage String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  CourseRoom    CourseRoom[]
+  Content       Content[]
+  Comment       Comment[]
+  Reply         Reply[]
+  Rating        Rating[]
+  RoomOrganizer RoomOrganizer[]
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+  INSTRUCTOR
+}
+
+model CourseRoom {
+  id              String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String     @db.ObjectId
+  status          RoomStatus @default(public)
+  createdAt       DateTime   @default(now())
+  roomImage       String?
+  roomName        String
+  roomDescription String?
+  coverImage      String?
+  userIds         String[]   @db.ObjectId
+  category        String?
+
+  creator       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  //members User[] @relation("members", fields: [userIds], references: [id])
+  RoomOrganizer RoomOrganizer[]
+}
+
+enum RoomStatus {
+  private
+  public
+}
+
+model RoomOrganizer {
+  id     String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId String   @db.ObjectId
+  roomId String   @db.ObjectId
+  role   RoomRole
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room CourseRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+enum RoomRole {
+  ADMIN
+  MODERATOR
+  CONTRIBUTOR
+}
+
+//post lessons 
+model Content {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String     @db.ObjectId
+  title       String
+  textContent String?
+  videoUrls   String[]
+  imageUrls   String[]
+  pdf         String[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  status      RoomStatus @default(public)
+
+  creator User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Comment Comment[]
+  Reply   Reply[]
+  Rating  Rating[]
+}
+
+//comment to a content
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  contentId String   @db.ObjectId
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Reply   Reply[]
+}
+
+//reply to a comment
+model Reply {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  commentId String   @db.ObjectId
+  contentId String   @db.ObjectId
+  reply     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+}
+
+model Rating {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  value     Int // The rating value (1 to 5)
+  createdAt DateTime @default(now())
+  contentId String   @db.ObjectId
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  userId  String  @db.ObjectId
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
