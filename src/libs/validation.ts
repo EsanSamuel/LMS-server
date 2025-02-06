@@ -35,6 +35,7 @@ export const validateContent = z.object({
   textContent: z.string().min(1).max(255),
   userId: z.string().min(1).max(255),
   roomId: z.string().min(1).max(255),
+  status: z.enum(["private", "public"]),
 });
 
 export type contentType = z.infer<typeof validateContent>;

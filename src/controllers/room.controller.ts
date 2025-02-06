@@ -39,7 +39,7 @@ class CourseController {
         const roomImageBuffer = req.file.buffer;
 
         const resizeImage = await sharp(roomImageBuffer)
-          .resize(250, 250)
+          .resize(350, 350)
           .toFormat("png")
           .toBuffer();
 
@@ -91,32 +91,35 @@ class CourseController {
           .json(
             new ApiSuccess(
               200,
-              "User gotten successfully",
+              "Course room gotten from cache successfully",
               JSON.parse(cachedGroups)
             )
           );
+      } else {
+        console.log("No cached room found. Fetching from database...");
+
+        const groups = await prisma.courseRoom.findMany({
+          orderBy: {
+            createdAt: "desc",
+          },
+          include: {
+            creator: true,
+          },
+        });
+
+        console.log(groups);
+
+        //get only public groups
+        const getPublicGroups = groups.filter(
+          (group) => group.status === "public" || group.status !== "private"
+        );
+        const randGroups = makeCouseRoomsRandom(Array.from(getPublicGroups));
+        console.log("Random groups:", randGroups);
+        await redis.setex(cachedKey, 600, JSON.stringify(randGroups));
+        res
+          .status(200)
+          .json(new ApiSuccess(200, "Course rooms/groups gotten!", randGroups));
       }
-      const groups = await prisma.courseRoom.findMany({
-        orderBy: {
-          createdAt: "desc",
-        },
-        include: {
-          creator: true,
-        },
-      });
-
-      console.log(groups);
-
-      //get only public groups
-      const getPublicGroups = groups.filter(
-        (group) => group.status === "public" || group.status !== "private"
-      );
-      const randGroups = makeCouseRoomsRandom(Array.from(getPublicGroups));
-      console.log("Random groups:", randGroups);
-      await redis.setex(cachedKey, 600, JSON.stringify(randGroups));
-      res
-        .status(200)
-        .json(new ApiSuccess(200, "Course rooms/groups gotten!", randGroups));
     } catch (error) {
       console.log(error);
       res
@@ -141,28 +144,35 @@ class CourseController {
           .json(
             new ApiSuccess(
               200,
-              "User gotten successfully",
+              "Course room created by user gotten from cache successfully",
               JSON.parse(cachedGroups)
             )
           );
-      }
-      const groups = await prisma.courseRoom.findMany({
-        where: {
-          userId: clerkId,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        include: {
-          creator: true,
-        },
-      });
-      console.log(groups);
+      } else {
+        console.log(
+          `No cached room of key couseRooms:${clerkId} found. Fetching from database...`
+        );
 
-      await redis.setex(cachedKey, 600, JSON.stringify(groups));
-      res
-        .status(200)
-        .json(new ApiSuccess(200, "User Course rooms/groups gotten!", groups));
+        const groups = await prisma.courseRoom.findMany({
+          where: {
+            userId: clerkId,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          include: {
+            creator: true,
+          },
+        });
+        console.log(groups);
+
+        await redis.setex(cachedKey, 600, JSON.stringify(groups));
+        res
+          .status(200)
+          .json(
+            new ApiSuccess(200, "User Course rooms/groups gotten!", groups)
+          );
+      }
     } catch (error) {
       console.log(error);
       res.status(500).json(new ApiError(500, "Something went wrong!", error));
@@ -185,25 +195,30 @@ class CourseController {
           .json(
             new ApiSuccess(
               200,
-              "User gotten successfully",
+              "Course room by id gotten from cache successfully",
               JSON.parse(cachedGroup)
             )
           );
-      }
-      const group = await prisma.courseRoom.findUnique({
-        where: {
-          id: id,
-        },
-        include: {
-          creator: true,
-        },
-      });
-      console.log(group);
+      } else {
+        console.log(
+          `No cached room of key couseRoom:${id} found. Fetching from database...`
+        );
 
-      await redis.setex(cachedKey, 600, JSON.stringify(group));
-      res
-        .status(200)
-        .json(new ApiSuccess(200, "Course rooms/groups gotten!", group));
+        const group = await prisma.courseRoom.findUnique({
+          where: {
+            id: id,
+          },
+          include: {
+            creator: true,
+          },
+        });
+        console.log(group);
+
+        await redis.setex(cachedKey, 600, JSON.stringify(group));
+        res
+          .status(200)
+          .json(new ApiSuccess(200, "Course rooms/groups gotten!", group));
+      }
     } catch (error) {
       console.log(error);
       res.status(500).json(new ApiError(500, "Something went wrong!", error));
@@ -260,7 +275,7 @@ class CourseController {
         const roomImageBuffer = req.file.buffer;
 
         const resizeImage = await sharp(roomImageBuffer)
-          .resize(250, 250)
+          .resize(350, 350)
           .toFormat("png")
           .toBuffer();
 
@@ -343,26 +358,33 @@ class CourseController {
           .json(
             new ApiSuccess(
               200,
-              "User gotten successfully",
+              "Room organizers gotten from cache successfully",
               JSON.parse(cachedOrganizers)
             )
           );
-      }
-      const roomOrganizers = await prisma.roomOrganizer.findMany({
-        where: {
-          roomId: id,
-        },
-        include: {
-          user: true,
-          room: true,
-        },
-      });
+      } else {
+        console.log(
+          `No cached room organizer of key organizers:${id} found. Fetching from database...`
+        );
 
-      console.log(roomOrganizers);
-      await redis.setex(cachedkey, 600, JSON.stringify(roomOrganizers));
-      res
-        .status(200)
-        .json(new ApiSuccess(200, "Group organizers fetched!", roomOrganizers));
+        const roomOrganizers = await prisma.roomOrganizer.findMany({
+          where: {
+            roomId: id,
+          },
+          include: {
+            user: true,
+            room: true,
+          },
+        });
+
+        console.log(roomOrganizers);
+        await redis.setex(cachedkey, 600, JSON.stringify(roomOrganizers));
+        res
+          .status(200)
+          .json(
+            new ApiSuccess(200, "Group organizers fetched!", roomOrganizers)
+          );
+      }
     } catch (error) {
       console.log(error);
       res.status(500).json(new ApiError(500, "Something went wrong!", error));

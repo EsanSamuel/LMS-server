@@ -18,5 +18,7 @@ router.post(
   ]),
   CourseController.createCourse
 );
+router.get("/getCourses/:id", CourseController.getCourses);
+router.get("/getCourse/:id", CourseController.getCourseById);
 
 export default router;

@@ -69,27 +69,32 @@ class UserController {
           .json(
             new ApiSuccess(
               200,
-              "User gotten successfully",
+              "User gotten from cache successfully",
               JSON.parse(cachedUser)
             )
           );
-      }
-      const user = await prisma.user.findUnique({
-        where: {
-          clerkId: id,
-        },
-      });
-      if (!user) {
+      } else {
+        console.log(
+          `No cached room of key user:${id} found. Fetching from database...`
+        );
+
+        const user = await prisma.user.findUnique({
+          where: {
+            clerkId: id,
+          },
+        });
+        if (!user) {
+          res
+            .status(500)
+            .json(new ApiError(500, "User not found!", ["User not found!"]));
+        }
+        console.log(user);
+        // Cache user data for 10 minutes
+        await redis.setex(cachedkey, 600, JSON.stringify(user));
         res
-          .status(500)
-          .json(new ApiError(500, "User not found!", ["User not found!"]));
+          .status(200)
+          .json(new ApiSuccess(200, "User gotten successfully", user));
       }
-      console.log(user);
-      // Cache user data for 10 minutes
-      await redis.setex(cachedkey, 600, JSON.stringify(user));
-      res
-        .status(200)
-        .json(new ApiSuccess(200, "User gotten successfully", user));
     } catch (error) {
       console.log(error);
       res.status(500).json(new ApiError(500, "Something went wrong!", error));
@@ -112,21 +117,26 @@ class UserController {
           .json(
             new ApiSuccess(
               200,
-              "User gotten successfully",
+              "User gotten from cache successfully",
               JSON.parse(cachedUsers)
             )
           );
+      } else {
+        console.log(
+          `No cached room of key users found. Fetching from database...`
+        );
+
+        const users = await prisma.user.findMany({
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+        console.log(users);
+        await redis.setex(cachedKey, 600, JSON.stringify(users));
+        res
+          .status(200)
+          .json(new ApiSuccess(200, "Users gotten successfully", users));
       }
-      const users = await prisma.user.findMany({
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-      console.log(users);
-      await redis.setex(cachedKey, 600, JSON.stringify(users));
-      res
-        .status(200)
-        .json(new ApiSuccess(200, "User created successfully", users));
     } catch (error) {
       console.log(error);
       res.status(500).json(new ApiError(500, "Something went wrong!", error));
