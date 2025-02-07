@@ -1,10 +1,12 @@
 import express from "express";
 import Redis from "ioredis";
 import {
+  commentType,
   contentType,
   organizerType,
   roomType,
   userType,
+  validateComment,
   validateContent,
   validateOrganizer,
   validateRoom,
@@ -31,8 +33,14 @@ class CourseController {
   static async createCourse(req: express.Request, res: express.Response) {
     try {
       const validate = validateContent.parse(await req.body);
-      const { title, textContent, userId, roomId, status }: contentType =
-        validate;
+      const {
+        title,
+        textContent,
+        userId,
+        roomId,
+        status,
+        isDiscussion,
+      }: contentType = validate;
       const { thumbnailUrl, videoUrls, imageUrls } = req.files as {
         [fieldname: string]: Express.Multer.File[];
       };
@@ -117,6 +125,7 @@ class CourseController {
           videoUrls: videos as string[],
           imageUrls: images,
           status: status,
+          isDiscussion,
         },
       });
 
@@ -160,6 +169,7 @@ class CourseController {
           include: {
             creator: true,
             room: true,
+            Comment: true,
           },
           orderBy: {
             createdAt: "desc",
@@ -259,7 +269,9 @@ class CourseController {
         console.log(courses);
 
         await redis.setex(cachedkey, 600, JSON.stringify(courses));
-        res.status(201).json(new ApiSuccess(201, "Course goten🟢🟢!", courses));
+        res
+          .status(200)
+          .json(new ApiSuccess(200, "Course gotten🟢🟢!", courses));
       }
     } catch (error) {
       console.log(error);
@@ -267,6 +279,256 @@ class CourseController {
         .status(500)
         .json(new ApiError(500, "Something went wrong🔴🔴!", error));
     }
+  }
+
+  static async createComment(req: express.Request, res: express.Response) {
+    try {
+      const validate = validateComment.parse(await req.body);
+      const { userId, contentId, comment }: commentType = validate;
+      const create_comment = await prisma.comment.create({
+        data: {
+          author: {
+            connect: {
+              clerkId: userId,
+            },
+          },
+          content: {
+            connect: {
+              id: contentId,
+            },
+          },
+          comment,
+        },
+      });
+      console.log(create_comment);
+      res
+        .status(201)
+        .json(new ApiSuccess(201, "Comment created!🟢🟢!", create_comment));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async getComments(req: express.Request, res: express.Response) {
+    try {
+      const id = req.params.id;
+      const cachedKey = `comments:${id}`;
+      const cachedComments = await redis.get(cachedKey);
+      if (cachedComments) {
+        console.log("Cached comments:", cachedComments);
+        res
+          .status(200)
+          .json(
+            new ApiSuccess(
+              201,
+              "Comment gotten from cache!🟢🟢!",
+              JSON.parse(cachedComments)
+            )
+          );
+      } else {
+        console.log("Fectching comments from database...");
+        const comments = await prisma.comment.findMany({
+          where: {
+            contentId: id,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          include: {
+            author: true,
+            content: true,
+          },
+        });
+        console.log(comments);
+        await redis.setex(cachedKey, 600, JSON.stringify(comments));
+        res
+          .status(200)
+          .json(new ApiSuccess(200, "Comment gotten!🟢🟢!", comments));
+      }
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async getCommentById(req: express.Request, res: express.Response) {
+    try {
+      const id = req.params.id;
+      const cachedKey = `comment:${id}`;
+      const cachedComment = await redis.get(cachedKey);
+      if (cachedComment) {
+        console.log("Cached comment:", cachedComment);
+        res
+          .status(200)
+          .json(
+            new ApiSuccess(
+              201,
+              "Comment gotten from cache!🟢🟢!",
+              JSON.parse(cachedComment)
+            )
+          );
+      } else {
+        console.log("Fetching comments from database...");
+        const comments = await prisma.comment.findUnique({
+          where: {
+            id: id,
+          },
+          include: {
+            author: true,
+            content: true,
+          },
+        });
+        console.log(comments);
+        await redis.setex(cachedKey, 600, JSON.stringify(comments));
+        res
+          .status(200)
+          .json(new ApiSuccess(200, "Comment gotten!🟢🟢!", comments));
+      }
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  //create quiz for each courses
+  static async createQuiz(req: express.Request, res: express.Response) {
+    try {
+      const { title, courseId, questions, userId } = await req.body;
+
+      const quiz = await prisma.quiz.create({
+        data: {
+          title,
+          course: {
+            connect: {
+              id: courseId,
+            },
+          },
+          author: {
+            connect: {
+              clerkId: userId,
+            },
+          },
+          //quiz questions
+          questions: {
+            create: questions.map((q: any) => ({
+              text: q.text,
+              options: q.options ?? [],
+              correctAnswer: q.correctAnswer,
+            })),
+          },
+        },
+      });
+      console.log(quiz);
+      res.status(201).json(new ApiSuccess(201, "Quiz created!", quiz));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async getQuiz(req: express.Request, res: express.Response) {
+    try {
+      const id = req.params.id;
+      const cachedKey = `quizzes:${id}`;
+      const cachedQuizzes = await redis.get(cachedKey);
+      if (cachedQuizzes) {
+        console.log(cachedQuizzes);
+        res
+          .status(200)
+          .json(
+            new ApiSuccess(
+              200,
+              "Quiz gotten from cache🟢🟢!",
+              JSON.parse(cachedQuizzes)
+            )
+          );
+      } else {
+        console.log("No quizzes at cache. Fetching from Database...");
+        const get_quiz = await prisma.quiz.findMany({
+          where: {
+            courseId: id,
+          },
+          include: {
+            questions: true,
+          },
+        });
+        console.log(get_quiz);
+        await redis.setex(cachedKey, 600, JSON.stringify(get_quiz));
+        res.status(200).json(new ApiSuccess(200, "Quiz gotten🟢🟢!", get_quiz));
+      }
+    } catch (error) {
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async checkAnswer(req: express.Request, res: express.Response) {
+    try {
+      const { userId, answers } = await req.body;
+
+      const userAnswers = await prisma.$transaction(
+        answers.map((answer: any) =>
+          prisma.userAnswer.create({
+            data: {
+              userId,
+              questionId: answer.questionId,
+              answer: answer.answer,
+              isCorrect: null,
+            },
+          })
+        )
+      );
+
+      res
+        .status(201)
+        .json(new ApiSuccess(201, "Quiz answer🟢🟢!", userAnswers));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async gradeQuiz(req: express.Request, res: express.Response) {
+    const { quizId } = req.params;
+    const userAnswers = await prisma.userAnswer.findMany({
+      where: { question: { quizId } },
+      include: { question: true },
+    });
+
+    const quizzQuestions = await prisma.question.findMany({
+      where: {
+        quizId,
+      },
+    });
+
+    const gradedAnswers = await prisma.$transaction(
+      userAnswers.map((answer) =>
+        prisma.userAnswer.update({
+          where: { id: answer.id },
+          data: { isCorrect: answer.answer === answer.question.correctAnswer },
+        })
+      )
+    );
+
+    console.log(
+      `User Score: ${gradedAnswers.length} / ${quizzQuestions.length}`
+    );
+
+    res
+      .status(201)
+      .json(new ApiSuccess(201, "Quiz answer graded🟢🟢!", gradedAnswers));
   }
 }
 

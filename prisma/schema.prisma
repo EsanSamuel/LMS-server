@@ -31,6 +31,8 @@ model User {
   Reply         Reply[]
   Rating        Rating[]
   RoomOrganizer RoomOrganizer[]
+  like          likeCourse[]
+  Quiz          Quiz[]
 }
 
 enum Role {
@@ -80,24 +82,32 @@ enum RoomRole {
 
 //post lessons 
 model Content {
-  id           String     @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String     @db.ObjectId
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String      @db.ObjectId
   title        String
   thumbnailUrl String
   textContent  String?
   videoUrls    String[]
   imageUrls    String[]
   pdf          String[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  status       RoomStatus @default(public)
-  roomId       String     @db.ObjectId
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  status       RoomStatus  @default(public)
+  roomId       String      @db.ObjectId
+  isDiscussion ShowComment
 
-  creator User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  room    CourseRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  creator User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room    CourseRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
   Comment Comment[]
   Reply   Reply[]
   Rating  Rating[]
+  like    likeCourse[]
+  Quiz    Quiz[]
+}
+
+enum ShowComment {
+  ON
+  OFF
 }
 
 //comment to a content
@@ -129,6 +139,16 @@ model Reply {
   content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 }
 
+model likeCourse {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  createdAt DateTime @default(now())
+  contentId String   @db.ObjectId
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Rating {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   value     Int // The rating value (1 to 5)
@@ -138,4 +158,36 @@ model Rating {
   content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
   userId  String  @db.ObjectId
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Quiz {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  userId    String     @db.ObjectId
+  courseId  String     @db.ObjectId
+  questions Question[]
+  createdAt DateTime   @default(now())
+
+  author User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Content @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Question {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  text          String
+  options       String[]
+  createdAt     DateTime     @default(now())
+  correctAnswer String
+  quizId        String       @db.ObjectId
+  quiz          Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  UserAnswer    UserAnswer[]
+}
+
+model UserAnswer {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  questionId String   @db.ObjectId
+  answer     String
+  isCorrect  Boolean?
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }

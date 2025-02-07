@@ -20,5 +20,12 @@ router.post(
 );
 router.get("/getCourses/:id", CourseController.getCourses);
 router.get("/getCourse/:id", CourseController.getCourseById);
+router.post("/create-comment", CourseController.createComment);
+router.get("/get-allcomments:/id", CourseController.getComments);
+router.get("/get-comment:/id", CourseController.getCommentById);
+router.post("/create-quiz", CourseController.createQuiz);
+router.get("/get-quiz/:id", CourseController.getQuiz);
+router.post("/check-quizAnswer", CourseController.checkAnswer);
+router.post("/grade-quiz/:quizId", CourseController.gradeQuiz);
 
 export default router;

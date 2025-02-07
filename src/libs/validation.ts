@@ -36,6 +36,17 @@ export const validateContent = z.object({
   userId: z.string().min(1).max(255),
   roomId: z.string().min(1).max(255),
   status: z.enum(["private", "public"]),
+  isDiscussion: z.enum(["ON", "OFF"]),
 });
 
 export type contentType = z.infer<typeof validateContent>;
+
+//userId, contentId, comment
+
+export const validateComment = z.object({
+  userId: z.string().min(1).max(255),
+  comment: z.string().min(1).max(255),
+  contentId: z.string().min(1).max(255),
+});
+
+export type commentType = z.infer<typeof validateComment>;

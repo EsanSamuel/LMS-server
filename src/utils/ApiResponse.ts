@@ -39,7 +39,7 @@ class ApiSuccess {
         this.statusCode = statusCode
         this.message = message
         this.data = data
-        this.success = statusCode < 400 //if response code > 400 return false
+        this.success = statusCode < 400 //if response code >= 400 return false
     }
 }
 
