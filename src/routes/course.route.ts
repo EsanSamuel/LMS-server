@@ -2,6 +2,7 @@ import CourseController from "../controllers/course.controller";
 import UserController from "../controllers/user.controller";
 import express from "express";
 import multer from "multer";
+import { requireAuth } from "@clerk/express";
 
 // Configure multer storage
 const storage = multer.memoryStorage(); // Stores file in memory as a buffer
@@ -10,6 +11,10 @@ const upload = multer({ storage });
 const router = express.Router();
 
 router.post("/create-course-module", CourseController.createCourseModule);
+router.get("/get-allmodules/:id", CourseController.getCourseModules);
+router.get("/get-module/:id", CourseController.getCourseModuleById);
+router.patch("/edit-module/:id", CourseController.editCourseModule);
+router.delete("/delete-module/:id", CourseController.deleteCourseModule);
 router.post(
   "/create-course",
   upload.fields([
@@ -21,11 +26,14 @@ router.post(
 );
 router.get("/getCourses/:id", CourseController.getCourses);
 router.get("/getCourse/:id", CourseController.getCourseById);
+router.delete("/delete-course/:id", CourseController.deleteCourse);
 router.post("/create-comment", CourseController.createComment);
 router.get("/get-allcomments:/id", CourseController.getComments);
 router.get("/get-comment:/id", CourseController.getCommentById);
+router.delete("/delete-comment/:id", CourseController.deleteComment);
 router.post("/create-quiz", CourseController.createQuiz);
 router.get("/get-quiz/:id", CourseController.getQuiz);
+router.delete("/delete-quiz/:id", CourseController.deleteQuiz);
 router.post("/check-quizAnswer", CourseController.checkAnswer);
 router.post("/grade-quiz/:quizId", CourseController.gradeQuiz);
 router.post("/like-course/:id", CourseController.likeCourse);

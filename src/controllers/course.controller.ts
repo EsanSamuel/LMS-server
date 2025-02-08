@@ -3,11 +3,13 @@ import Redis from "ioredis";
 import {
   commentType,
   contentType,
+  moduleType,
   organizerType,
   roomType,
   userType,
   validateComment,
   validateContent,
+  validateCourseModule,
   validateOrganizer,
   validateRoom,
   validateUser,
@@ -34,7 +36,9 @@ class CourseController {
   //create a module inside a room in which several course lesson are created in
   static async createCourseModule(req: express.Request, res: express.Response) {
     try {
-      const { roomId, title, position, description, userId } = await req.body;
+      const validate = validateCourseModule.parse(await req.body);
+      const { roomId, title, position, description, userId }: moduleType =
+        validate;
       const module = await prisma.module.create({
         data: {
           room: {
@@ -100,6 +104,96 @@ class CourseController {
             new ApiSuccess(200, "Course module gotten🟢🟢", course_modules)
           );
       }
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async editCourseModule(req: express.Request, res: express.Response) {
+    try {
+      const { title, position, description } = await req.body;
+      const moduleId = req.params.id;
+      const edit_module = await prisma.module.update({
+        where: {
+          id: moduleId,
+        },
+        data: {
+          title,
+          position,
+          description,
+        },
+      });
+      console.log(edit_module);
+      await redis.del(`module:${moduleId}`);
+      res
+        .status(200)
+        .json(new ApiSuccess(200, "Course module edited!🟢🟢", edit_module));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async getCourseModuleById(
+    req: express.Request,
+    res: express.Response
+  ) {
+    try {
+      const moduleId = req.params.id;
+      const cachedKey = `module:${moduleId}`;
+      const cachedModule = await redis.get(cachedKey);
+      if (cachedModule) {
+        console.log(cachedModule);
+        res
+          .status(200)
+          .json(
+            new ApiSuccess(
+              200,
+              "Course module gotten from cache🟢🟢",
+              JSON.parse(cachedModule)
+            )
+          );
+      } else {
+        const module = await prisma.module.findUnique({
+          where: {
+            id: moduleId,
+          },
+          include: {
+            creator: true,
+            room: true,
+          },
+        });
+        console.log(module);
+        await redis.setex(cachedKey, 600, JSON.stringify(module));
+        res
+          .status(200)
+          .json(new ApiSuccess(200, "Course module gotten🟢🟢", module));
+      }
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async deleteCourseModule(req: express.Request, res: express.Response) {
+    try {
+      const moduleId = req.params.id;
+      await prisma.module.delete({
+        where: {
+          id: moduleId,
+        },
+      });
+      await redis.del(`module:${moduleId}`);
+      res
+        .status(204)
+        .json(new ApiSuccess(204, "Course module deleted🟢🟢", ""));
     } catch (error) {
       console.log(error);
       res
@@ -302,7 +396,7 @@ class CourseController {
         });
         console.log(course);
         await redis.setex(cachedkey, 600, JSON.stringify(course));
-        res.status(201).json(new ApiSuccess(201, "Course goten🟢🟢!", course));
+        res.status(200).json(new ApiSuccess(200, "Course goten🟢🟢!", course));
       }
     } catch (error) {
       console.log(error);
@@ -351,6 +445,24 @@ class CourseController {
           .status(200)
           .json(new ApiSuccess(200, "Course gotten🟢🟢!", courses));
       }
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async deleteCourse(req: express.Request, res: express.Response) {
+    try {
+      const courseId = req.params.Id;
+      await prisma.content.delete({
+        where: {
+          id: courseId,
+        },
+      });
+      await redis.del(`course:${courseId}`);
+      res.status(204).json(new ApiSuccess(204, "Course deleted🟢🟢!", ""));
     } catch (error) {
       console.log(error);
       res
@@ -467,6 +579,24 @@ class CourseController {
           .status(200)
           .json(new ApiSuccess(200, "Comment gotten!🟢🟢!", comments));
       }
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async deleteComment(req: express.Request, res: express.Response) {
+    try {
+      const commentId = req.params.id;
+      await prisma.comment.delete({
+        where: {
+          id: commentId,
+        },
+      });
+      await redis.del(`comment:${commentId}`);
+      res.status(204).json(new ApiSuccess(204, "Comment deleted!🟢🟢!", ""));
     } catch (error) {
       console.log(error);
       res
@@ -630,6 +760,25 @@ class CourseController {
         await redis.setex(cachedKey, 600, JSON.stringify(get_quiz));
         res.status(200).json(new ApiSuccess(200, "Quiz gotten🟢🟢!", get_quiz));
       }
+    } catch (error) {
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async deleteQuiz(req: express.Request, res: express.Response) {
+    try {
+      const quizId = req.params.id;
+      await prisma.quiz.delete({
+        where: {
+          id: quizId,
+        },
+        include: {
+          questions: true,
+        },
+      });
+      res.status(204).json(new ApiSuccess(204, "Quiz deleted🟢🟢!", ""));
     } catch (error) {
       res
         .status(500)

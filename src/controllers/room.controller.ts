@@ -302,10 +302,33 @@ class CourseController {
       await redis.del(`couseRoom:${id}`);
       res
         .status(200)
-        .json(new ApiSuccess(200, "Group edidted successfully!", courseRoom));
+        .json(new ApiSuccess(200, "Group edited successfully!", courseRoom));
     } catch (error) {
       console.log(error);
       res.status(500).json(new ApiError(500, "Something went wrong!", error));
+    }
+  }
+
+  //delete course room
+  static async deleteRoom(req: express.Request, res: express.Response) {
+    try {
+      const roomId = req.params.id;
+      await prisma.courseRoom.delete({
+        where: {
+          id: roomId,
+        },
+      });
+      await redis.del(`couseRoom:${roomId}`);
+      res
+        .status(204)
+        .json(
+          new ApiSuccess(204, "Group deleted successfully🟢🟢!", "Room deleted")
+        );
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong!🔴🔴", error));
     }
   }
 

@@ -190,6 +190,26 @@ class UserController {
       res.status(500).json(new ApiError(500, "Something went wrong!", error));
     }
   }
+
+  static async deleteUser(req: express.Request, res: express.Response) {
+    try {
+      const userId = req.params.id;
+      await prisma.user.delete({
+        where: {
+          id: userId,
+        },
+      });
+      await redis.del(`user:${userId}`);
+      res
+        .status(204)
+        .json(new ApiSuccess(204, "User deleted🟢🟢", "Account deleted!"));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
 }
 
 export default UserController;

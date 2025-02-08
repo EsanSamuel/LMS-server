@@ -1,6 +1,7 @@
 import CourseController from "../controllers/room.controller";
 import express from "express";
 import multer from "multer";
+import { requireAuth } from "@clerk/express";
 
 // Configure multer storage
 const storage = multer.memoryStorage(); // Stores file in memory as a buffer
@@ -21,6 +22,7 @@ router.patch(
   CourseController.addCoverImage
 );
 router.patch("/editRoom/:id", uploadSingle, CourseController.editRoom);
+router.delete("/delete-room/:id", CourseController.deleteRoom);
 router.post("/addOrganizer", CourseController.addOrganizers);
 router.get("/getRoomOrganizer/:id", CourseController.getRoomOrganizer);
 router.post("/authorize-role", CourseController.authorizeRole);

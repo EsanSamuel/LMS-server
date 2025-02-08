@@ -50,3 +50,15 @@ export const validateComment = z.object({
 });
 
 export type commentType = z.infer<typeof validateComment>;
+
+//roomId, title, position, description, userId
+
+export const validateCourseModule = z.object({
+  userId: z.string().min(1).max(255),
+  roomId: z.string().min(1).max(255),
+  title: z.string().min(1).max(255),
+  position: z.number(),
+  description: z.string().optional(),
+});
+
+export type moduleType = z.infer<typeof validateCourseModule>;
