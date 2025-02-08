@@ -8,6 +8,7 @@ import { rateLimit } from "express-rate-limit";
 import users from "./routes/user.route";
 import rooms from "./routes/room.route";
 import courses from "./routes/course.route";
+import { clerkMiddleware } from "@clerk/express";
 
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +20,7 @@ app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors());
+app.use(clerkMiddleware());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

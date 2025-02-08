@@ -34,7 +34,7 @@ export const validateContent = z.object({
   title: z.string().min(1).max(255),
   textContent: z.string().min(1).max(255),
   userId: z.string().min(1).max(255),
-  roomId: z.string().min(1).max(255),
+  moduleId: z.string().min(1).max(255),
   status: z.enum(["private", "public"]),
   isDiscussion: z.enum(["ON", "OFF"]),
 });

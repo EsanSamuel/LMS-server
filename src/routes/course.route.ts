@@ -9,6 +9,7 @@ const upload = multer({ storage });
 
 const router = express.Router();
 
+router.post("/create-course-module", CourseController.createCourseModule);
 router.post(
   "/create-course",
   upload.fields([
@@ -27,5 +28,7 @@ router.post("/create-quiz", CourseController.createQuiz);
 router.get("/get-quiz/:id", CourseController.getQuiz);
 router.post("/check-quizAnswer", CourseController.checkAnswer);
 router.post("/grade-quiz/:quizId", CourseController.gradeQuiz);
+router.post("/like-course/:id", CourseController.likeCourse);
+router.post("/get-likes", CourseController.getLikes);
 
 export default router;

@@ -33,6 +33,7 @@ model User {
   RoomOrganizer RoomOrganizer[]
   like          likeCourse[]
   Quiz          Quiz[]
+  Module        Module[]
 }
 
 enum Role {
@@ -57,6 +58,7 @@ model CourseRoom {
   //members User[] @relation("members", fields: [userIds], references: [id])
   RoomOrganizer RoomOrganizer[]
   Content       Content[]
+  Module        Module[]
 }
 
 enum RoomStatus {
@@ -80,6 +82,20 @@ enum RoomRole {
   CONTRIBUTOR
 }
 
+model Module {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  roomId      String   @db.ObjectId
+  userId      String   @db.ObjectId
+  title       String
+  description String?
+  position    Int // Order of the module
+  createdAt   DateTime @default(now())
+
+  creator User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room    CourseRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  Content Content[]
+}
+
 //post lessons 
 model Content {
   id           String      @id @default(auto()) @map("_id") @db.ObjectId
@@ -93,16 +109,18 @@ model Content {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   status       RoomStatus  @default(public)
-  roomId       String      @db.ObjectId
   isDiscussion ShowComment
 
-  creator User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  room    CourseRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  Comment Comment[]
-  Reply   Reply[]
-  Rating  Rating[]
-  like    likeCourse[]
-  Quiz    Quiz[]
+  creator      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Comment      Comment[]
+  Reply        Reply[]
+  Rating       Rating[]
+  like         likeCourse[]
+  Quiz         Quiz[]
+  Module       Module?      @relation(fields: [moduleId], references: [id])
+  moduleId     String?      @db.ObjectId
+  CourseRoom   CourseRoom?  @relation(fields: [courseRoomId], references: [id])
+  courseRoomId String?      @db.ObjectId
 }
 
 enum ShowComment {

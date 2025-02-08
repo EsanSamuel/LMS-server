@@ -19,6 +19,7 @@ import sharp from "sharp";
 import cloudinary from "../utils/cloudinary";
 import { connect } from "http2";
 
+//interface for destructured object in multer
 interface MulterfileInterface {
   thumbnailUrl: Express.Multer.File[];
   videoUrls: Express.Multer.File[];
@@ -26,9 +27,86 @@ interface MulterfileInterface {
   pdf: Express.Multer.File[];
 }
 
+//initialize redis for caching
 const redis = new Redis();
 
 class CourseController {
+  //create a module inside a room in which several course lesson are created in
+  static async createCourseModule(req: express.Request, res: express.Response) {
+    try {
+      const { roomId, title, position, description, userId } = await req.body;
+      const module = await prisma.module.create({
+        data: {
+          room: {
+            connect: {
+              id: roomId,
+            },
+          },
+          creator: {
+            connect: {
+              clerkId: userId,
+            },
+          },
+          title,
+          position,
+          description,
+        },
+      });
+
+      console.log(module);
+      res
+        .status(201)
+        .json(new ApiSuccess(201, "Module for courses created🟢🟢!", module));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  //get each modules in a room
+  static async getCourseModules(req: express.Request, res: express.Response) {
+    try {
+      const roomId = req.params.id;
+      const cachedKey = `module:${roomId}`;
+      const cachedModules = await redis.get(cachedKey);
+      if (cachedModules) {
+        console.log("Cached courses:", cachedModules);
+        res
+          .status(201)
+          .json(
+            new ApiSuccess(
+              200,
+              "Course modules gotten from cache🟢🟢!",
+              JSON.parse(cachedModules)
+            )
+          );
+      } else {
+        const course_modules = await prisma.module.findMany({
+          where: {
+            roomId: roomId,
+          },
+          include: {
+            room: true,
+            creator: true,
+          },
+        });
+        console.log(course_modules);
+        await redis.setex(cachedKey, 600, JSON.stringify(course_modules));
+        res
+          .status(200)
+          .json(
+            new ApiSuccess(200, "Course module gotten🟢🟢", course_modules)
+          );
+      }
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
   //create course
   static async createCourse(req: express.Request, res: express.Response) {
     try {
@@ -37,7 +115,7 @@ class CourseController {
         title,
         textContent,
         userId,
-        roomId,
+        moduleId,
         status,
         isDiscussion,
       }: contentType = validate;
@@ -114,9 +192,9 @@ class CourseController {
               clerkId: userId,
             },
           },
-          room: {
+          Module: {
             connect: {
-              id: roomId,
+              id: moduleId,
             },
           },
           title,
@@ -164,11 +242,11 @@ class CourseController {
 
         const courses = await prisma.content.findMany({
           where: {
-            roomId: id,
+            moduleId: id,
           },
           include: {
             creator: true,
-            room: true,
+            Module: true,
             Comment: true,
           },
           orderBy: {
@@ -219,7 +297,7 @@ class CourseController {
           },
           include: {
             creator: true,
-            room: true,
+            Module: true,
           },
         });
         console.log(course);
@@ -260,7 +338,7 @@ class CourseController {
           },
           include: {
             creator: true,
-            room: true,
+            Module: true,
           },
           orderBy: {
             createdAt: "desc",
@@ -388,6 +466,93 @@ class CourseController {
         res
           .status(200)
           .json(new ApiSuccess(200, "Comment gotten!🟢🟢!", comments));
+      }
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  //like a course
+  static async likeCourse(req: express.Request, res: express.Response) {
+    try {
+      const contentId = req.params.id;
+      const { userId } = await req.body;
+      if (!userId || !contentId) {
+        res
+          .status(404)
+          .json(
+            new ApiError(404, "Ids required🔴🔴!", [
+              "userId and courseId required!",
+            ])
+          );
+      }
+      const likeCourse = await prisma.likeCourse.create({
+        data: {
+          user: {
+            connect: {
+              clerkId: userId,
+            },
+          },
+          content: {
+            connect: {
+              id: contentId,
+            },
+          },
+        },
+      });
+      console.log(likeCourse);
+
+      res
+        .status(201)
+        .json(new ApiSuccess(201, "Course  liked🟢🟢!", likeCourse));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  //get each likes for a course
+  static async getLikes(req: express.Request, res: express.Response) {
+    try {
+      const id = req.params.id;
+      const cachedKey = `likes:${id}`;
+      const cachedLikes = await redis.get(cachedKey);
+      if (cachedLikes) {
+        console.log(cachedLikes);
+
+        res
+          .status(200)
+          .json(
+            new ApiError(
+              200,
+              "Likes gotten from cache🟢🟢!",
+              JSON.parse(cachedLikes)
+            )
+          );
+      } else {
+        console.log("No cached likes. Fetching from database...");
+        const get_Likes = await prisma.likeCourse.findMany({
+          where: {
+            contentId: id,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          include: {
+            user: true,
+            content: true,
+          },
+        });
+        console.log(get_Likes);
+        await redis.setex(cachedKey, 600, JSON.stringify(get_Likes));
+        res
+          .status(200)
+          .json(new ApiSuccess(200, "Likes fetched🟢🟢!", get_Likes));
       }
     } catch (error) {
       console.log(error);
