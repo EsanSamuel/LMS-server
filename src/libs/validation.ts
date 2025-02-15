@@ -4,6 +4,7 @@ export const validateUser = z.object({
   username: z.string().min(1).max(255),
   email: z.string().email(),
   clerkId: z.string().min(1).max(255),
+  profileImage: z.string().min(1).max(255),
 });
 
 export type userType = z.infer<typeof validateUser>;
@@ -12,7 +13,7 @@ export type userType = z.infer<typeof validateUser>;
 
 export const validateRoom = z.object({
   roomName: z.string().min(1).max(255),
-  roomDescription: z.string().min(1).max(255),
+  roomDescription: z.string().min(1),
   category: z.string().min(1).max(255),
   clerkId: z.string().min(1).max(255),
   status: z.enum(["private", "public"]),
@@ -36,7 +37,7 @@ export const validateContent = z.object({
   userId: z.string().min(1).max(255),
   moduleId: z.string().min(1).max(255),
   status: z.enum(["private", "public"]),
-  isDiscussion: z.enum(["ON", "OFF"]),
+  isDiscussion: z.string(),
 });
 
 export type contentType = z.infer<typeof validateContent>;

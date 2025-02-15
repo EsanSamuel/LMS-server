@@ -21,7 +21,7 @@ const getCurrentUser = async <T>(clerkId: string): Promise<string | null> => {
 class UserController {
   static async createUser(req: express.Request, res: express.Response) {
     const validate = validateUser.parse(await req.body);
-    const { username, email, clerkId }: userType = validate;
+    const { username, email, clerkId, profileImage }: userType = validate;
 
     if (!username || !email || !clerkId) {
       res.status(401).send("Invalid data!");
@@ -38,6 +38,7 @@ class UserController {
           email: email,
           clerkId: clerkId,
           uniqueName: uniqueUsername,
+          profileImage,
         },
       });
 

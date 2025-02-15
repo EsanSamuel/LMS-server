@@ -16,10 +16,11 @@ import {
 } from "../libs/validation";
 import prisma from "../libs/prismadb";
 import { ApiError, ApiSuccess } from "../utils/ApiResponse";
-import { CourseRoom, User } from "@prisma/client";
+import { CourseRoom, User, Content } from "@prisma/client";
 import sharp from "sharp";
 import cloudinary from "../utils/cloudinary";
-import { connect } from "http2";
+import streamifier from "streamifier";
+import { UploadApiResponse } from "cloudinary";
 
 //interface for destructured object in multer
 interface MulterfileInterface {
@@ -58,6 +59,7 @@ class CourseController {
       });
 
       console.log(module);
+      await redis.del(`module:${roomId}`);
       res
         .status(201)
         .json(new ApiSuccess(201, "Module for courses created🟢🟢!", module));
@@ -75,7 +77,7 @@ class CourseController {
       const roomId = req.params.id;
       const cachedKey = `module:${roomId}`;
       const cachedModules = await redis.get(cachedKey);
-      if (cachedModules) {
+      if (cachedModules || cachedModules !== null) {
         console.log("Cached courses:", cachedModules);
         res
           .status(201)
@@ -213,7 +215,7 @@ class CourseController {
         status,
         isDiscussion,
       }: contentType = validate;
-      const { thumbnailUrl, videoUrls, imageUrls } = req.files as {
+      const { thumbnailUrl, videoUrls, imageUrls, pdfUrls } = req.files as {
         [fieldname: string]: Express.Multer.File[];
       };
 
@@ -221,7 +223,7 @@ class CourseController {
         const imageBuffer = file.buffer;
 
         const resizeImage = await sharp(imageBuffer)
-          .resize(500, 500)
+          .resize(2000, 2000)
           .toFormat("png")
           .toBuffer();
 
@@ -232,21 +234,52 @@ class CourseController {
         return uploadImage.url;
       };
 
+      const processedPdf = async (
+        file: Express.Multer.File
+      ): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          if (!file.buffer) {
+            console.error("File buffer is empty!");
+            return reject("File buffer is empty!");
+          }
+
+          // Convert the file buffer to a base64 string
+          const pdfToString = file.buffer.toString("base64");
+          const pdf = `data:application/pdf;base64,${pdfToString}`;
+
+          cloudinary.uploader
+            .upload_large(pdf, {
+              resource_type: "raw",
+              folder: "pdf_uploads",
+              chunk_size: 20_000_000, // 20MB chunks for large files
+              timeout: 900000, // 15 minutes timeout
+            })
+            .then((result: UploadApiResponse) => {
+              resolve(result.secure_url);
+            })
+            .catch((error: any) => {
+              console.error("Cloudinary Upload Error:", error);
+              reject("PDF upload failed");
+            });
+        });
+      };
+
       const processedVideo = async (file: Express.Multer.File) => {
         return new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             {
-              resource_type: "video", // Specify resource type as 'video'
-              folder: "videos", // Optional: Store videos in a specific folder on Cloudinary
+              resource_type: "video",
+              folder: "videos",
               format: "mp4",
-              timeout: 600000, // Optional: Ensure Cloudinary processes the video in the desired format
+              chunk_size: 10_000_000,
+              timeout: 900000,
             },
             (error, result) => {
               if (error) {
                 console.error("Cloudinary Video Upload Error:", error);
                 reject("Video upload failed");
               } else {
-                resolve(result?.secure_url); // Resolve the URL of the uploaded video
+                resolve(result?.secure_url);
               }
             }
           );
@@ -279,6 +312,11 @@ class CourseController {
         : [];
       console.log("Image URLs:", images);
 
+      const pdfs = pdfUrls?.length
+        ? await Promise.all(pdfUrls.map((file) => processedPdf(file)))
+        : [];
+      console.log("Pdf URLs:", pdfs);
+
       const create_course = await prisma.content.create({
         data: {
           creator: {
@@ -298,11 +336,12 @@ class CourseController {
           imageUrls: images,
           status: status,
           isDiscussion,
+          pdf: pdfs as string[],
         },
       });
 
       console.log(create_course);
-
+      await redis.del(`courses:${create_course.id}`);
       res
         .status(201)
         .json(new ApiSuccess(201, "Course created🟢🟢!", create_course));
@@ -344,7 +383,7 @@ class CourseController {
             Comment: true,
           },
           orderBy: {
-            createdAt: "desc",
+            createdAt: "asc",
           },
         });
         console.log(courses);

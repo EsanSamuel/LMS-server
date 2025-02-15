@@ -39,7 +39,7 @@ class CourseController {
         const roomImageBuffer = req.file.buffer;
 
         const resizeImage = await sharp(roomImageBuffer)
-          .resize(350, 350)
+          .resize(350, 150)
           .toFormat("png")
           .toBuffer();
 
@@ -65,6 +65,7 @@ class CourseController {
         },
       });
       console.log(courseRoom);
+      await redis.del("courseRooms");
       res
         .status(201)
         .json(new ApiSuccess(201, "Group created successfully!", courseRoom));
@@ -82,10 +83,10 @@ class CourseController {
     res: express.Response
   ): Promise<void> {
     try {
-      const cachedKey = "couseRooms";
+      const cachedKey = "courseRooms";
       const cachedGroups = await redis.get(cachedKey);
       if (cachedGroups) {
-        console.log(`Course rooms fetched from cache!`);
+        console.log(`Course rooms fetched from cache!`, cachedGroups);
         res
           .status(200)
           .json(
@@ -135,7 +136,7 @@ class CourseController {
   ): Promise<void> {
     try {
       const clerkId = req.params.id;
-      const cachedKey = `couseRooms:${clerkId}`;
+      const cachedKey = `courseRooms:${clerkId}`;
       const cachedGroups = await redis.get(cachedKey);
       if (cachedGroups) {
         console.log(`User Rooms ${clerkId} fetched from cache!`);
@@ -186,7 +187,7 @@ class CourseController {
   ): Promise<void> {
     try {
       const id = req.params.id;
-      const cachedKey = `couseRoom:${id}`;
+      const cachedKey = `courseRoom:${id}`;
       const cachedGroup = await redis.get(cachedKey);
       if (cachedGroup) {
         console.log(`Room ${id} fetched from cache!`);
@@ -299,7 +300,7 @@ class CourseController {
         },
       });
       console.log(courseRoom);
-      await redis.del(`couseRoom:${id}`);
+      await redis.del(`courseRoom:${id}`);
       res
         .status(200)
         .json(new ApiSuccess(200, "Group edited successfully!", courseRoom));

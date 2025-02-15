@@ -21,6 +21,7 @@ router.post(
     { name: "thumbnailUrl", maxCount: 1 },
     { name: "videoUrls", maxCount: 10 },
     { name: "imageUrls", maxCount: 10 },
+    { name: "pdfUrls", maxCount: 10 },
   ]),
   CourseController.createCourse
 );

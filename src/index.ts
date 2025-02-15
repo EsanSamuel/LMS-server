@@ -22,6 +22,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors());
 app.use(clerkMiddleware());
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

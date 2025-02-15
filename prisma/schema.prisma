@@ -109,7 +109,7 @@ model Content {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   status       RoomStatus  @default(public)
-  isDiscussion ShowComment
+  isDiscussion String?
 
   creator      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   Comment      Comment[]
