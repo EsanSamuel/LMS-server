@@ -16,7 +16,7 @@ import {
 } from "../libs/validation";
 import prisma from "../libs/prismadb";
 import { ApiError, ApiSuccess } from "../utils/ApiResponse";
-import { CourseRoom, User, Content } from "@prisma/client";
+import { CourseRoom, User, Content, UserAnswer } from "@prisma/client";
 import sharp from "sharp";
 import cloudinary from "../utils/cloudinary";
 import streamifier from "streamifier";
@@ -223,7 +223,7 @@ class CourseController {
         const imageBuffer = file.buffer;
 
         const resizeImage = await sharp(imageBuffer)
-          .resize(2000, 2000)
+          .resize(3000, 3000)
           .toFormat("png")
           .toBuffer();
 
@@ -760,7 +760,40 @@ class CourseController {
         },
       });
       console.log(quiz);
+      await redis.del(`quizzes:${quiz.id}`);
       res.status(201).json(new ApiSuccess(201, "Quiz created!", quiz));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async editQuiz(req: express.Request, res: express.Response) {
+    try {
+      const courseId = req.params.id;
+      const { title, questions } = await req.body;
+
+      const quiz = await prisma.quiz.update({
+        where: {
+          id: courseId,
+        },
+        data: {
+          title,
+          //quiz questions
+          questions: {
+            create: questions.map((q: any) => ({
+              text: q.text,
+              options: q.options ?? [],
+              correctAnswer: q.correctAnswer,
+            })),
+          },
+        },
+      });
+      console.log(quiz);
+      await redis.del(`quizzes:${quiz.id}`);
+      res.status(201).json(new ApiSuccess(201, "Quiz edited!", quiz));
     } catch (error) {
       console.log(error);
       res
@@ -827,13 +860,20 @@ class CourseController {
 
   static async checkAnswer(req: express.Request, res: express.Response) {
     try {
-      const { userId, answers } = await req.body;
+      const userId = req.params.id;
+      const { answers } = await req.body;
+
+      const user = await prisma.user.findUnique({
+        where: {
+          clerkId: userId,
+        },
+      });
 
       const userAnswers = await prisma.$transaction(
-        answers.map((answer: any) =>
+        answers?.map((answer: any) =>
           prisma.userAnswer.create({
             data: {
-              userId,
+              userId: user.id,
               questionId: answer.questionId,
               answer: answer.answer,
               isCorrect: null,
