@@ -223,7 +223,7 @@ class CourseController {
         const imageBuffer = file.buffer;
 
         const resizeImage = await sharp(imageBuffer)
-          .resize(3000, 3000)
+          .resize(2500, 910, { fit: "contain" })
           .toFormat("png")
           .toBuffer();
 
@@ -893,6 +893,50 @@ class CourseController {
     }
   }
 
+  static async deleteAnswers(req: express.Request, res: express.Response) {
+    try {
+      const userId = req.params.id;
+
+      const user = await prisma.user.findUnique({
+        where: {
+          clerkId: userId,
+        },
+      });
+      await prisma.userAnswer.deleteMany({
+        where: {
+          userId: user.id,
+        },
+      });
+      res
+        .status(204)
+        .json(new ApiSuccess(204, "Quiz answer🟢🟢!", "userAnswers deleted"));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async getUserAnswer(req: express.Request, res: express.Response) {
+    try {
+      const quizId = req.params.id;
+      const userAnswers = await prisma.userAnswer.findMany({
+        where: { question: { quizId } },
+        include: { question: true },
+      });
+
+      res
+        .status(200)
+        .json(new ApiSuccess(200, "Quiz answer gotten🟢🟢!", userAnswers));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
   static async gradeQuiz(req: express.Request, res: express.Response) {
     const { quizId } = req.params;
     const userAnswers = await prisma.userAnswer.findMany({
@@ -900,23 +944,16 @@ class CourseController {
       include: { question: true },
     });
 
-    const quizzQuestions = await prisma.question.findMany({
-      where: {
-        quizId,
-      },
-    });
-
     const gradedAnswers = await prisma.$transaction(
       userAnswers.map((answer) =>
         prisma.userAnswer.update({
           where: { id: answer.id },
           data: { isCorrect: answer.answer === answer.question.correctAnswer },
+          include: {
+            user: true,
+          },
         })
       )
-    );
-
-    console.log(
-      `User Score: ${gradedAnswers.length} / ${quizzQuestions.length}`
     );
 
     res

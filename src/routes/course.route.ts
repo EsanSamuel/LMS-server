@@ -38,6 +38,8 @@ router.get("/get-quiz/:id", CourseController.getQuiz);
 router.delete("/delete-quiz/:id", CourseController.deleteQuiz);
 router.post("/check-quizAnswer/:id", CourseController.checkAnswer);
 router.post("/grade-quiz/:quizId", CourseController.gradeQuiz);
+router.get("/getUserAnswer/:id", CourseController.getUserAnswer);
+router.delete("/delete-answers/:id", CourseController.deleteAnswers);
 router.post("/like-course/:id", CourseController.likeCourse);
 router.post("/get-likes", CourseController.getLikes);
 
