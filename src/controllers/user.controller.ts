@@ -159,7 +159,8 @@ class UserController {
         const imageBuffer = req.file.buffer;
 
         const resizeImage = await sharp(imageBuffer)
-          .resize(150, 150)
+          .resize({ width: 300 })
+          .sharpen()
           .toFormat("png")
           .toBuffer();
 

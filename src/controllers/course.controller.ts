@@ -96,6 +96,7 @@ class CourseController {
           include: {
             room: true,
             creator: true,
+            Content: true,
           },
         });
         console.log(course_modules);
@@ -223,7 +224,8 @@ class CourseController {
         const imageBuffer = file.buffer;
 
         const resizeImage = await sharp(imageBuffer)
-          .resize(2500, 910, { fit: "contain" })
+          .resize({ width: 800 }) // Resize (optional)
+          .sharpen() // Sharpen the image
           .toFormat("png")
           .toBuffer();
 
@@ -939,26 +941,58 @@ class CourseController {
 
   static async gradeQuiz(req: express.Request, res: express.Response) {
     const { quizId } = req.params;
-    const userAnswers = await prisma.userAnswer.findMany({
-      where: { question: { quizId } },
-      include: { question: true },
-    });
 
-    const gradedAnswers = await prisma.$transaction(
-      userAnswers.map((answer) =>
-        prisma.userAnswer.update({
-          where: { id: answer.id },
-          data: { isCorrect: answer.answer === answer.question.correctAnswer },
-          include: {
-            user: true,
-          },
-        })
-      )
-    );
+    try {
+      const userAnswers = await prisma.userAnswer.findMany({
+        where: { question: { quizId } },
+        include: { question: true },
+      });
 
-    res
-      .status(201)
-      .json(new ApiSuccess(201, "Quiz answer graded🟢🟢!", gradedAnswers));
+      const maxRetries = 3; // Maximum number of retries
+      let attempt = 0;
+
+      while (attempt < maxRetries) {
+        try {
+          const gradedAnswers = await prisma.$transaction(
+            userAnswers.map((answer) =>
+              prisma.userAnswer.update({
+                where: { id: answer.id },
+                data: {
+                  isCorrect: answer.answer === answer.question.correctAnswer,
+                },
+                include: {
+                  user: true,
+                },
+              })
+            )
+          );
+
+          // Success: Return the response
+          return res
+            .status(201)
+            .json(
+              new ApiSuccess(201, "Quiz answer graded🟢🟢!", gradedAnswers)
+            );
+        } catch (error) {
+          if (error.code === "P2034") {
+            attempt++;
+            console.warn(
+              `Transaction failed. Retrying attempt ${attempt}/${maxRetries}...`
+            );
+            if (attempt === maxRetries) {
+              return res.status(500).json({
+                message: "Failed to grade quiz after multiple retries.",
+              });
+            }
+          } else {
+            throw error; // If it's a different error, throw it
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error grading quiz:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
   }
 }
 

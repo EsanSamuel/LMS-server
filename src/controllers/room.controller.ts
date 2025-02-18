@@ -39,7 +39,8 @@ class CourseController {
         const roomImageBuffer = req.file.buffer;
 
         const resizeImage = await sharp(roomImageBuffer)
-          .resize(350, 150, { fit: "cover" })
+          .resize({ width: 800 }) // Resize (optional)
+          .sharpen() // Sharpen the image
           .toFormat("png")
           .toBuffer();
 
@@ -105,6 +106,7 @@ class CourseController {
           },
           include: {
             creator: true,
+            Module: true,
           },
         });
 
@@ -236,7 +238,8 @@ class CourseController {
       const roomImageBuffer = req.file.buffer;
 
       const resizeImage = await sharp(roomImageBuffer)
-        .resize(500, 350)
+        .resize({ width: 800 })
+        .sharpen()
         .toFormat("png")
         .toBuffer();
 
