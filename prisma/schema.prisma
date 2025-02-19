@@ -25,16 +25,19 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  CourseRoom    CourseRoom[]
-  Content       Content[]
-  Comment       Comment[]
-  Reply         Reply[]
-  Rating        Rating[]
-  RoomOrganizer RoomOrganizer[]
-  like          likeCourse[]
-  Quiz          Quiz[]
-  Module        Module[]
-  UserAnswer    UserAnswer[]
+  CourseRoom     CourseRoom[]
+  Content        Content[]
+  Comment        Comment[]
+  Reply          Reply[]
+  Rating         Rating[]
+  RoomOrganizer  RoomOrganizer[]
+  like           likeCourse[]
+  Quiz           Quiz[]
+  Module         Module[]
+  UserAnswer     UserAnswer[]
+  BookMarkRoom   BookMarkRoom[]
+  BookMarkModule BookMarkModule[]
+  BookMarkCourse BookMarkCourse[]
 }
 
 enum Role {
@@ -55,11 +58,14 @@ model CourseRoom {
   userIds         String[]   @db.ObjectId
   category        String?
 
-  creator       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creator        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   //members User[] @relation("members", fields: [userIds], references: [id])
-  RoomOrganizer RoomOrganizer[]
-  Content       Content[]
-  Module        Module[]
+  RoomOrganizer  RoomOrganizer[]
+  Content        Content[]
+  Module         Module[]
+  BookMarkRoom   BookMarkRoom[]
+  BookMarkModule BookMarkModule[]
+  BookMarkCourse BookMarkCourse[]
 }
 
 enum RoomStatus {
@@ -92,9 +98,10 @@ model Module {
   position    Int // Order of the module
   createdAt   DateTime @default(now())
 
-  creator User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  room    CourseRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  Content Content[]
+  creator        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room           CourseRoom       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  Content        Content[]
+  BookMarkModule BookMarkModule[]
 }
 
 //post lessons 
@@ -107,21 +114,23 @@ model Content {
   videoUrls    String[]
   imageUrls    String[]
   pdf          String[]
+  links        String[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   status       RoomStatus @default(public)
   isDiscussion String?
 
-  creator      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  Comment      Comment[]
-  Reply        Reply[]
-  Rating       Rating[]
-  like         likeCourse[]
-  Quiz         Quiz[]
-  Module       Module?      @relation(fields: [moduleId], references: [id])
-  moduleId     String?      @db.ObjectId
-  CourseRoom   CourseRoom?  @relation(fields: [courseRoomId], references: [id])
-  courseRoomId String?      @db.ObjectId
+  creator        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Comment        Comment[]
+  Reply          Reply[]
+  Rating         Rating[]
+  like           likeCourse[]
+  Quiz           Quiz[]
+  Module         Module?          @relation(fields: [moduleId], references: [id])
+  moduleId       String?          @db.ObjectId
+  CourseRoom     CourseRoom?      @relation(fields: [courseRoomId], references: [id])
+  courseRoomId   String?          @db.ObjectId
+  BookMarkCourse BookMarkCourse[]
 }
 
 enum ShowComment {
@@ -211,4 +220,38 @@ model UserAnswer {
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BookMarkRoom {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  roomId       String   @db.ObjectId
+  bookMarkedAt DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room CourseRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model BookMarkModule {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  moduleId     String   @db.ObjectId
+  bookMarkedAt DateTime @default(now())
+
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module       Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  CourseRoom   CourseRoom? @relation(fields: [courseRoomId], references: [id])
+  courseRoomId String?     @db.ObjectId
+}
+
+model BookMarkCourse {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  courseId     String   @db.ObjectId
+  bookMarkedAt DateTime @default(now())
+
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course       Content     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  CourseRoom   CourseRoom? @relation(fields: [courseRoomId], references: [id])
+  courseRoomId String?     @db.ObjectId
 }

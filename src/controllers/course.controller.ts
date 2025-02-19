@@ -215,6 +215,7 @@ class CourseController {
         moduleId,
         status,
         isDiscussion,
+        links,
       }: contentType = validate;
       const { thumbnailUrl, videoUrls, imageUrls, pdfUrls } = req.files as {
         [fieldname: string]: Express.Multer.File[];
@@ -319,6 +320,11 @@ class CourseController {
         : [];
       console.log("Pdf URLs:", pdfs);
 
+      let courseLink: string[] = [];
+      for (const link of links) {
+        courseLink.push(link);
+      }
+
       const create_course = await prisma.content.create({
         data: {
           creator: {
@@ -339,6 +345,7 @@ class CourseController {
           status: status,
           isDiscussion,
           pdf: pdfs as string[],
+          links: courseLink,
         },
       });
 

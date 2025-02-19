@@ -38,6 +38,7 @@ export const validateContent = z.object({
   moduleId: z.string().min(1).max(255),
   status: z.enum(["private", "public"]),
   isDiscussion: z.string(),
+  links: z.array(z.string()),
 });
 
 export type contentType = z.infer<typeof validateContent>;

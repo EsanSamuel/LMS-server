@@ -10,7 +10,7 @@ import {
 } from "../libs/validation";
 import prisma from "../libs/prismadb";
 import { ApiError, ApiSuccess } from "../utils/ApiResponse";
-import { CourseRoom, User } from "@prisma/client";
+import { CourseRoom, User, BookMarkRoom } from "@prisma/client";
 import sharp from "sharp";
 import cloudinary from "../utils/cloudinary";
 
@@ -453,6 +453,81 @@ class CourseController {
         },
       });
       res.status(200).json(new ApiSuccess(200, "Group organizer deleted!", []));
+    } catch (error) {
+      console.log(error);
+      res.status(500).json(new ApiError(500, "Something went wrong!", error));
+    }
+  }
+
+  static async bookMarkRoom(req: express.Request, res: express.Response) {
+    try {
+      const userId = req.params.userId;
+      const roomId = req.params.roomId;
+      const bookmarked = await prisma.bookMarkRoom.create({
+        data: {
+          user: {
+            connect: {
+              clerkId: userId,
+            },
+          },
+          room: {
+            connect: {
+              id: roomId,
+            },
+          },
+        },
+      });
+      console.log(bookmarked);
+      await redis.del(`roombookmark:${roomId}`);
+      res.status(201).json(new ApiSuccess(201, "Group saved!", bookmarked));
+    } catch (error) {
+      console.log(error);
+      res.status(500).json(new ApiError(500, "Something went wrong!", error));
+    }
+  }
+
+  static async getBookMarkRoom(req: express.Request, res: express.Response) {
+    try {
+      const roomId = req.params.id;
+      const cachedkey = `roombookmark:${roomId}`;
+      const cachedBookmark = await redis.get(cachedkey);
+      if (cachedBookmark) {
+        console.log(`Room organizers fetched from cache!`);
+        res
+          .status(200)
+          .json(
+            new ApiSuccess(
+              200,
+              "Room organizers gotten from cache successfully",
+              JSON.parse(cachedBookmark)
+            )
+          );
+      } else {
+        const bookmarked = await prisma.bookMarkRoom.findMany({
+          where: {
+            roomId,
+          },
+          include: {
+            user: true,
+            room: true,
+          },
+        });
+        console.log(bookmarked);
+        res.status(200).json(new ApiSuccess(200, "Group saved!", bookmarked));
+      }
+    } catch (error) {
+      console.log(error);
+      res.status(500).json(new ApiError(500, "Something went wrong!", error));
+    }
+  }
+  static async deleteBookmark(req: express.Request, res: express.Response) {
+    try {
+      const bookMarkId = req.params.id;
+      await prisma.bookMarkRoom.delete({
+        where: {
+          id: bookMarkId,
+        },
+      });
     } catch (error) {
       console.log(error);
       res.status(500).json(new ApiError(500, "Something went wrong!", error));

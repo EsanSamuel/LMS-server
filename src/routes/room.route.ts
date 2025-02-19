@@ -27,6 +27,8 @@ router.post("/addOrganizer", CourseController.addOrganizers);
 router.get("/getRoomOrganizer/:id", CourseController.getRoomOrganizer);
 router.post("/authorize-role", CourseController.authorizeRole);
 router.delete("delete-organizer/id", CourseController.removeOrganizer);
+router.post("/save-room/:userId/:roomId", CourseController.bookMarkRoom);
+router.get("/get-saved-room/:id", CourseController.getBookMarkRoom);
 
 export default router;
 
