@@ -38,6 +38,7 @@ model User {
   BookMarkRoom   BookMarkRoom[]
   BookMarkModule BookMarkModule[]
   BookMarkCourse BookMarkCourse[]
+  engagedModules EngagedModules[]
 }
 
 enum Role {
@@ -102,6 +103,7 @@ model Module {
   room           CourseRoom       @relation(fields: [roomId], references: [id], onDelete: Cascade)
   Content        Content[]
   BookMarkModule BookMarkModule[]
+  engagedModules EngagedModules[]
 }
 
 //post lessons 
@@ -254,4 +256,14 @@ model BookMarkCourse {
   course       Content     @relation(fields: [courseId], references: [id], onDelete: Cascade)
   CourseRoom   CourseRoom? @relation(fields: [courseRoomId], references: [id])
   courseRoomId String?     @db.ObjectId
+}
+
+model EngagedModules {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String   @db.ObjectId
+  moduleId String   @db.ObjectId
+  addedAt  DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 }

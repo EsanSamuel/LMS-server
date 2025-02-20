@@ -10,6 +10,7 @@ import rooms from "./routes/room.route";
 import courses from "./routes/course.route";
 import { clerkMiddleware } from "@clerk/express";
 import authLimiter from "./middlewares/rateLimiter";
+import tracks from "./routes/tracking.route";
 
 const app = express();
 const server = http.createServer(app);
@@ -37,6 +38,7 @@ app.use(limiter);
 app.use("/v1", authLimiter, users);
 app.use("/v1", rooms);
 app.use("/v1", courses);
+app.use("v1", tracks);
 
 app.get("/", async (req: express.Request, res: express.Response) => {
   res.send("Hello from the server!");
