@@ -1,4 +1,4 @@
-import CourseController from "../controllers/room.controller";
+import CourseController from "../../controllers/room.controller";
 import express from "express";
 import multer from "multer";
 import { requireAuth } from "@clerk/express";

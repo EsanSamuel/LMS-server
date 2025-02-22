@@ -1,4 +1,4 @@
-import UserController from "../controllers/user.controller";
+import UserController from "../../controllers/user.controller";
 import express from "express";
 import multer from "multer";
 import { requireAuth } from "@clerk/express";

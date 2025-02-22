@@ -1,5 +1,6 @@
-import CourseController from "../controllers/course.controller";
-import UserController from "../controllers/user.controller";
+import { getAuth } from "@clerk/express";
+import CourseController from "../../controllers/course.controller";
+import UserController from "../../controllers/user.controller";
 import express from "express";
 import multer from "multer";
 import { requireAuth } from "@clerk/express";

@@ -5,12 +5,12 @@ import compression from "compression";
 import http from "http";
 import cors from "cors";
 import { rateLimit } from "express-rate-limit";
-import users from "./routes/user.route";
-import rooms from "./routes/room.route";
-import courses from "./routes/course.route";
-import { clerkMiddleware } from "@clerk/express";
+import users from "./routes/v1/user.routes";
+import rooms from "./routes/v1/room.routes";
+import courses from "./routes/v1/course.routes";
+import { clerkClient, clerkMiddleware, getAuth } from "@clerk/express";
 import authLimiter from "./middlewares/rateLimiter";
-import tracks from "./routes/tracking.route";
+import tracks from "./routes/v1/tracking.routes";
 
 const app = express();
 const server = http.createServer(app);
@@ -38,10 +38,16 @@ app.use(limiter);
 app.use("/v1", authLimiter, users);
 app.use("/v1", rooms);
 app.use("/v1", courses);
-app.use("v1", tracks);
+app.use("/v1", tracks);
 
 app.get("/", async (req: express.Request, res: express.Response) => {
   res.send("Hello from the server!");
+  const { userId } = getAuth(req);
+  console.log(userId);
+  if (userId) {
+    const user = await clerkClient.users.getUser(userId);
+    console.log(user);
+  }
 });
 
 const startServer = async () => {
