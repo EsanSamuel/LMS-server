@@ -40,6 +40,8 @@ model User {
   BookMarkCourse BookMarkCourse[]
   engagedModules EngagedModules[]
   EngagedCourses EngagedCourses[]
+  EngagedRooms   EngagedRooms[]
+  EngagedQuiz    EngagedQuiz[]
 }
 
 enum Role {
@@ -68,6 +70,7 @@ model CourseRoom {
   BookMarkRoom   BookMarkRoom[]
   BookMarkModule BookMarkModule[]
   BookMarkCourse BookMarkCourse[]
+  EngagedRooms   EngagedRooms[]
 }
 
 enum RoomStatus {
@@ -200,8 +203,9 @@ model Quiz {
   questions Question[]
   createdAt DateTime   @default(now())
 
-  author User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Content @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  author      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Content       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  EngagedQuiz EngagedQuiz[]
 }
 
 model Question {
@@ -222,6 +226,7 @@ model UserAnswer {
   answer     String
   isCorrect  Boolean?
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answeredAt     DateTime     @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -278,4 +283,24 @@ model EngagedCourses {
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+}
+
+model EngagedRooms {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String   @db.ObjectId
+  roomId  String   @db.ObjectId
+  addedAt DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room CourseRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model EngagedQuiz {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String   @db.ObjectId
+  quizId  String   @db.ObjectId
+  addedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
