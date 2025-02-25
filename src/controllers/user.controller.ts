@@ -83,6 +83,17 @@ class UserController {
           where: {
             clerkId: id,
           },
+          include: {
+            CourseRoom: {
+              include: {
+                Module: {
+                  include: {
+                    Content: true,
+                  },
+                },
+              },
+            },
+          },
         });
         if (!user) {
           res
@@ -131,6 +142,17 @@ class UserController {
           orderBy: {
             createdAt: "desc",
           },
+          include: {
+            CourseRoom: {
+              include: {
+                Module: {
+                  include: {
+                    Content: true,
+                  },
+                },
+              },
+            },
+          },
         });
         console.log(users);
         await redis.setex(cachedKey, 600, JSON.stringify(users));
@@ -150,8 +172,37 @@ class UserController {
   ): Promise<void> {
     try {
       const id = req.params.id;
-      const { username, bio } = await req.body;
+      const { username, bio, uniqueName } = await req.body;
       console.log(req.body);
+
+      const editProfile = await prisma.user.update({
+        where: {
+          clerkId: id,
+        },
+        data: {
+          username,
+          bio,
+          uniqueName,
+        },
+      });
+      console.log(editProfile);
+      //clear cache on edit profile
+      await redis.del(`user:${id}`);
+      res
+        .status(200)
+        .json(new ApiSuccess(200, "User updated successfully", editProfile));
+    } catch (error) {
+      console.log(error);
+      res.status(500).json(new ApiError(500, "Something went wrong!", error));
+    }
+  }
+
+  static async editImage(
+    req: express.Request,
+    res: express.Response
+  ): Promise<void> {
+    try {
+      const id = req.params.id;
 
       let ImageUrl: string | null = null;
 
@@ -176,8 +227,6 @@ class UserController {
           clerkId: id,
         },
         data: {
-          username,
-          bio,
           profileImage: ImageUrl,
         },
       });

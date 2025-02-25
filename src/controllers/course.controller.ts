@@ -350,7 +350,9 @@ class CourseController {
       });
 
       console.log(create_course);
-      await redis.del(`courses:${create_course.id}`);
+      if (create_course) {
+        await redis.del(`courses:${create_course.id}`);
+      }
       res
         .status(201)
         .json(new ApiSuccess(201, "Course created🟢🟢!", create_course));
