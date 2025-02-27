@@ -424,15 +424,22 @@ class CourseController {
     res: express.Response
   ): Promise<void> {
     try {
-      const { userId, roomId, requiredRole } = await req.body;
-      if (!userId || !roomId || !requiredRole) {
+      const userId = req.params.id;
+      const roomId = req.params.roomId;
+      const {requireRole} = req.body
+      if (!userId || !roomId) {
         res.status(400).json({ error: "Missing required fields" });
       }
+      const user = await prisma.user.findUnique({
+        where: {
+          clerkId: userId,
+        },
+      });
       const organizer = await prisma.roomOrganizer.findFirst({
         where: {
-          userId,
+          userId: user.id,
           roomId,
-          role: { in: requiredRole },
+          role: "CONTRIBUTOR",
         },
       });
 

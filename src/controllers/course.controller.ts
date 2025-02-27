@@ -390,7 +390,11 @@ class CourseController {
           },
           include: {
             creator: true,
-            Module: true,
+            Module: {
+              include: {
+                room: true,
+              },
+            },
             Comment: true,
           },
           orderBy: {
@@ -818,7 +822,7 @@ class CourseController {
       const id = req.params.id;
       const cachedKey = `quizzes:${id}`;
       const cachedQuizzes = await redis.get(cachedKey);
-      if (cachedQuizzes) {
+      if (!cachedQuizzes) {
         console.log(cachedQuizzes);
         res
           .status(200)

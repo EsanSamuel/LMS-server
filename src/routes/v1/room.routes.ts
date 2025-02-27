@@ -25,7 +25,7 @@ router.patch("/editRoom/:id", uploadSingle, CourseController.editRoom);
 router.delete("/delete-room/:id", CourseController.deleteRoom);
 router.post("/addOrganizer", CourseController.addOrganizers);
 router.get("/getRoomOrganizer/:id", CourseController.getRoomOrganizer);
-router.post("/authorize-role", CourseController.authorizeRole);
+router.post("/authorize-role/:id/:roomId", CourseController.authorizeRole);
 router.delete("delete-organizer/id", CourseController.removeOrganizer);
 router.post("/save-room/:userId/:roomId", CourseController.bookMarkRoom);
 router.get("/get-saved-room/:id", CourseController.getBookMarkRoom);
