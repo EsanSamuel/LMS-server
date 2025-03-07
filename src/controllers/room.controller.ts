@@ -426,7 +426,7 @@ class CourseController {
     try {
       const userId = req.params.id;
       const roomId = req.params.roomId;
-      const {requireRole} = req.body
+      const { requireRole } = req.body;
       if (!userId || !roomId) {
         res.status(400).json({ error: "Missing required fields" });
       }
@@ -575,11 +575,18 @@ class CourseController {
   static async deleteBookmark(req: express.Request, res: express.Response) {
     try {
       const bookMarkId = req.params.id;
+      const userId = req.params.userId;
+      const roomId = req.params.roomId;
       await prisma.bookMarkRoom.delete({
         where: {
           id: bookMarkId,
         },
       });
+      await redis.del(`roombookmark:${roomId}`);
+      await redis.del(`userbookmark:${userId}`);
+      res
+        .status(200)
+        .json(new ApiSuccess(200, "Bookmark deleted!", "Bookmark deleted"));
     } catch (error) {
       console.log(error);
       res.status(500).json(new ApiError(500, "Something went wrong!", error));

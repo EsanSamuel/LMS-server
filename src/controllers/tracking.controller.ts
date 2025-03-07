@@ -394,7 +394,11 @@ class TrackingController {
               user: true,
               quiz: {
                 include: {
-                  questions: true,
+                  questions: {
+                    include: {
+                      UserAnswer: true,
+                    },
+                  },
                 },
               },
             },

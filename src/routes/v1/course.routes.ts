@@ -43,5 +43,7 @@ router.get("/getUserAnswer/:id", CourseController.getUserAnswer);
 router.delete("/delete-answers/:id", CourseController.deleteAnswers);
 router.post("/like-course/:id", CourseController.likeCourse);
 router.post("/get-likes", CourseController.getLikes);
+router.post("/bookmark-moduke", CourseController.bookMarkModule);
+router.get("/user-boolmarked-module", CourseController.getUserBookmarks);
 
 export default router;

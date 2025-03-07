@@ -525,6 +525,79 @@ class CourseController {
     }
   }
 
+  static async bookMarkModule(req: express.Request, res: express.Response) {
+    try {
+      const userId = req.params.userId;
+      const moduleId = req.params.roomId;
+      const bookmarked = await prisma.bookMarkModule.create({
+        data: {
+          user: {
+            connect: {
+              clerkId: userId,
+            },
+          },
+          module: {
+            connect: {
+              id: moduleId,
+            },
+          },
+        },
+      });
+      console.log(bookmarked);
+      await redis.del(`modulebookmark:${moduleId}`);
+      await redis.del(`userbookmark:${userId}`);
+      res.status(201).json(new ApiSuccess(201, "Group saved!", bookmarked));
+    } catch (error) {
+      console.log(error);
+      res
+        .status(500)
+        .json(new ApiError(500, "Something went wrong🔴🔴!", error));
+    }
+  }
+
+  static async getUserBookmarks(req: express.Request, res: express.Response) {
+    try {
+      const clerkId = req.params.id;
+      const user = await prisma.user.findUnique({
+        where: {
+          clerkId: clerkId,
+        },
+      });
+      const userId = user.id;
+
+      const cachedkey = `userbookmark:${clerkId}`;
+      const cachedBookmark = await redis.get(cachedkey);
+      if (cachedBookmark) {
+        console.log(`Room organizers fetched from cache!`);
+        res
+          .status(200)
+          .json(
+            new ApiSuccess(
+              200,
+              "Room organizers gotten from cache successfully",
+              JSON.parse(cachedBookmark)
+            )
+          );
+      } else {
+        const bookmarked = await prisma.bookMarkModule.findMany({
+          where: {
+            userId,
+          },
+          include: {
+            user: true,
+            module: true,
+          },
+        });
+        console.log(bookmarked);
+        await redis.setex(cachedkey, 600, JSON.stringify(bookmarked));
+        res.status(200).json(new ApiSuccess(200, "Group saved!", bookmarked));
+      }
+    } catch (error) {
+      console.log(error);
+      res.status(500).json(new ApiError(500, "Something went wrong!", error));
+    }
+  }
+
   static async createComment(req: express.Request, res: express.Response) {
     try {
       const validate = validateComment.parse(await req.body);

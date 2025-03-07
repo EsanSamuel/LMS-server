@@ -30,7 +30,10 @@ router.delete("delete-organizer/id", CourseController.removeOrganizer);
 router.post("/save-room/:userId/:roomId", CourseController.bookMarkRoom);
 router.get("/get-saved-room/:id", CourseController.getBookMarkRoom);
 router.get("/get-user-bookmarks/:id", CourseController.getUserBookmarks);
-router.delete("/get-bookmark/:id", CourseController.deleteBookmark);
+router.delete(
+  "/delete-bookmark/:id/:userId/:roomId",
+  CourseController.deleteBookmark
+);
 
 export default router;
 
